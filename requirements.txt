@@ -2,5 +2,4 @@ flask
 flask-cors
 gensim==4.3.2
 numpy
-scipy>=1.7.0,<1.14.0
 psutil
