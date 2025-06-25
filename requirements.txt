@@ -1,6 +1,6 @@
 flask
 flask-cors
-gensim==4.3.2 --only-binary=:all:
-scipy==1.13.1 --only-binary=:all:
-psutil
+gensim==4.3.2
 numpy
+scipy>=1.7.0,<1.14.0
+psutil
