@@ -157,7 +157,11 @@ def hint():
     print_ram_usage()
 
     if best:
-        return jsonify(best)
+        return jsonify({
+            "word": best["word"],
+            "rank_sum": int(best["rank_in_word1"] + best["rank_in_word2"])
+        })
+
     else:
         return jsonify({"error": "Nessuna parola trovata"}), 404
 
