@@ -197,6 +197,15 @@ def test():
     rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
 
+    def tag_removal_reason(word):
+        wl = word.lower()
+        if (
+            Levenshtein.distance(wl, w1.lower()) <= 1 or
+            Levenshtein.distance(wl, w2.lower()) <= 1
+        ):
+            return "Lev1"
+        return None
+
     def compute_word_rank_and_score(model, word, target):
         try:
             similarity = model.similarity(word, target)
@@ -224,7 +233,8 @@ def test():
             s1 = rank_w1[word][1]
             s2 = rank_w2[word][1]
             adjusted = s2 * (1 + aiutino * tentative)
-            results.append((min(s1, adjusted), word, s1, s2))
+            removal_reason = tag_removal_reason(word)
+            results.append((min(s1, adjusted), word, s1, s2, removal_reason))
         results.sort(reverse=True)
         return [
             {
@@ -243,7 +253,8 @@ def test():
         for word in candidate_words:
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0]
-            results.append((r1 + r2, word))
+            removal_reason = tag_removal_reason(word)
+            results.append((r1 + r2, word, removal_reason))
         results.sort()
         return [
             {
@@ -263,7 +274,8 @@ def test():
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0]
             score = r1 * weight_rank1 + r2
-            results.append((score, word))
+            removal_reason = tag_removal_reason(word)
+            results.append((score, word, removal_reason))
         results.sort()
         return [
             {
