@@ -167,7 +167,9 @@ def hint():
     if best:
         return jsonify({
             "word": best["word"],
-            "rank_sum": int(best["rank_in_word1"] + best["rank_in_word2"])
+            "rank_sum": int(best["rank_in_word1"] + best["rank_in_word2"]),
+            "rank_1": int(best["rank_in_word1"]),
+            "rank_2": int(best["rank_in_word2"])
         })
 
     else:
