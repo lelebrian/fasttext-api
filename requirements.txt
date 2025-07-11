@@ -5,3 +5,4 @@ numpy<1.26
 scipy==1.10.1
 psutil
 gunicorn
+Levenshtein

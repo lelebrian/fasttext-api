@@ -4,8 +4,7 @@ from gensim.models import KeyedVectors
 import psutil
 import os
 import numpy as np
-
-
+import Levenshtein
 
 app = Flask(__name__)
 CORS(app)
@@ -122,9 +121,18 @@ def hint():
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
     candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
 
+    candidate_words = {
+        w for w in candidate_words
+        if w.lower() not in blacklist and
+        Levenshtein.distance(w.lower(), w1.lower()) > 1 and
+        Levenshtein.distance(w.lower(), w2.lower()) > 1 and
+        all(Levenshtein.distance(w.lower(), b) > 1 for b in blacklist)
+    }
+
     best = None
 
     for word in candidate_words:
+
         score1 = rank_w1[word][1]
         score2 = rank_w2[word][1]
         rank1 = rank_w1[word][0]
