@@ -235,7 +235,7 @@ def test():
             adjusted = s2 * (1 + aiutino * tentative)
             removal_reason = tag_removal_reason(word)
             results.append((min(s1, adjusted), word, s1, s2, removal_reason))
-        results.sort(reverse=True)
+            results.sort(reverse=True)
         return [
             {
                 "word": word,
@@ -244,6 +244,7 @@ def test():
                 "score_with_word2": round(s2, 4),
                 "rank_in_word1": rank_w1[word][0],
                 "rank_in_word2": rank_w2[word][0],
+                **({"removed": removal_reason} if removal_reason else {})
             }
             for ms, word, s1, s2 in results[:n]
         ]
@@ -263,6 +264,7 @@ def test():
                 "rank_in_word2": rank_w2[word][0],
                 "score_with_word1": round(rank_w1[word][1], 4),
                 "score_with_word2": round(rank_w2[word][1], 4),
+                **({"removed": removal_reason} if removal_reason else {})
             }
             for _, word in results[:n]
         ]
@@ -286,6 +288,7 @@ def test():
                 "score_with_word2": round(rank_w2[word][1], 4),
                 "weight_on_rank1": round(weight_rank1, 2),
                 "weighted_rank_sum": round(score, 1),
+                **({"removed": removal_reason} if removal_reason else {})
             }
             for score, word in results[:n]
         ]
