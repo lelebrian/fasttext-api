@@ -246,7 +246,7 @@ def test():
                 "rank_in_word2": rank_w2[word][0],
                 **({"removed": removal_reason} if removal_reason else {})
             }
-            for ms, word, s1, s2 in results[:n]
+            for ms, word, s1, s2, removal_reason in results[:n]
         ]
 
     def best_words_by_rank_sum(n=5):
@@ -266,7 +266,7 @@ def test():
                 "score_with_word2": round(rank_w2[word][1], 4),
                 **({"removed": removal_reason} if removal_reason else {})
             }
-            for _, word in results[:n]
+            for _, word, removal_reason in results[:n]
         ]
 
     def best_words_by_corrected_rank_sum(n=5):
@@ -290,7 +290,7 @@ def test():
                 "weighted_rank_sum": round(score, 1),
                 **({"removed": removal_reason} if removal_reason else {})
             }
-            for score, word in results[:n]
+            for score, word, removal_reason in results[:n]
         ]
 
     return jsonify({
