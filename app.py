@@ -304,6 +304,36 @@ def test():
     })
 
 
+@app.route("/lev")
+def levenshtein_similar_words():
+    word = request.args.get("word")
+    if not word:
+        return jsonify({"error": "Parametro 'word' mancante"}), 400
+
+    try:
+        top_words = model.most_similar(word, topn=200)
+    except KeyError:
+        return jsonify({"error": f"La parola '{word}' non è nel vocabolario"}), 404
+
+    result = []
+    for rank, (vocab_word, sim_score) in enumerate(top_words[:100], start=1):
+        lev_distance = Levenshtein.distance(word.lower(), vocab_word.lower())
+        lev_ratio = Levenshtein.ratio(word.lower(), vocab_word.lower())
+        formatted = (
+            f'"{vocab_word} ({rank})", '
+            f'"levenshtein_distance": {lev_distance}, '
+            f'"levenshtein_ratio": {round(lev_ratio, 4)}, '
+            f'"semantic_similarity": {round(sim_score, 4)}'
+        )
+        result.append(formatted)
+
+    return jsonify({
+        "input": word,
+        "top_100_by_semantic_similarity": result
+    })
+
+
+
 @app.route("/check")
 def check():
     w1 = request.args.get("word1")
