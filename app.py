@@ -337,12 +337,11 @@ def test():
 
         annotated_top_w1_formatted.append(formatted)
 
-
     return jsonify({
         "best_5_by_corrected_rank_sum": best_words_by_corrected_rank_sum(),
         "best_5_combined": best_words_by_min_score(),
         "best_5_by_rank_sum": best_words_by_rank_sum(),
-        "annotated_top_w1": annotated_top_w1_formatted
+        "top_w1": annotated_top_w1_formatted
     })
 
 
