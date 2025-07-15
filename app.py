@@ -125,12 +125,13 @@ def hint():
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
     candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
 
+    lev_threshold = 2
     candidate_words = {
         w for w in candidate_words
         if w.lower() not in blacklist and
-        Levenshtein.distance(w.lower(), w1.lower()) > 1 and
-        Levenshtein.distance(w.lower(), w2.lower()) > 1 and
-        all(Levenshtein.distance(w.lower(), b) > 1 for b in blacklist)
+        Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold and
+        Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold and
+        all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
     }
 
     # TODO: Filtrare top_w1 e top_w2 solo sulle candidate words, ricalcolare rank_w1 e rank_w2
@@ -215,13 +216,13 @@ def test():
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
     
     candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
-
+    lev_threshold = 2
     candidate_words = {
         w for w in candidate_words
         if w.lower() not in blacklist and
-        Levenshtein.distance(w.lower(), w1.lower()) > 1 and
-        Levenshtein.distance(w.lower(), w2.lower()) > 1 and
-        all(Levenshtein.distance(w.lower(), b) > 1 for b in blacklist)
+        Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold and
+        Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold and
+        all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
     }
 
     # Crea dizionari temporanei filtrati
