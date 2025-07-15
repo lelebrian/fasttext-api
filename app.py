@@ -366,7 +366,7 @@ def levenshtein_similar_words():
         return jsonify({"error": f"La parola '{word}' non è nel vocabolario"}), 404
 
     result = []
-    for rank, (vocab_word, sim_score) in enumerate(top_words[:100], start=1):
+    for rank, (vocab_word, sim_score) in enumerate(top_words[:1000], start=1):
         lev_distance = Levenshtein.distance(word.lower(), vocab_word.lower())
         lev_ratio = Levenshtein.ratio(word.lower(), vocab_word.lower())
         formatted = (
@@ -379,7 +379,7 @@ def levenshtein_similar_words():
 
     return jsonify({
         "input": word,
-        "top_100_by_semantic_similarity": result
+        "top_1000_by_semantic_similarity": result
     })
 
 
