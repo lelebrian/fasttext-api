@@ -197,6 +197,7 @@ def test():
     w2 = request.args.get("word2")
     tentative = int(request.args.get("tentative", 0))
     check = request.args.get("check", None)
+    blacklist = [""]
 
     if not w1 or not w2:
         return jsonify({"error": "Parametri 'word1' e 'word2' obbligatori"}), 400
