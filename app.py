@@ -322,10 +322,12 @@ def test():
         ]
     
     annotated_top_w1_formatted = []
+    top_w2_ranks = {word: i + 1 for i, (word, _) in enumerate(top_w2)}
+
     for i, (word, score) in enumerate(top_w1, start=1):
         rank1 = rank_w1[word][0] if word in rank_w1 else "-"
         rank2 = rank_w2[word][0] if word in rank_w2 else "-"
-        rank_top2 = top_w2[word] if word in top_w2 else "-"
+        rank_top2 = top_w2_ranks[word] if word in top_w2_ranks else "-"
 
         formatted = f"\"{word} ({i})\": " + str({
             "semantic_similarity": round(score, 6),
