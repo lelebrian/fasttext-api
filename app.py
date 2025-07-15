@@ -335,7 +335,7 @@ def test():
             "rank_top2": rank_top2
         }).replace("'", "\"")  # Convert to JSON-like format
 
-    annotated_top_w1_formatted.append(formatted)
+        annotated_top_w1_formatted.append(formatted)
 
 
     return jsonify({
