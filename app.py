@@ -321,22 +321,28 @@ def test():
             for score, word, removal_reason in results[:n]
         ]
     
-    # Full annotated top_w1
-    annotated_top_w1 = []
+    annotated_top_w1_formatted = []
     for i, (word, score) in enumerate(top_w1, start=1):
-        annotated_top_w1.append([
-            word,
-            round(score, 3),
-            f"rank_top1 = {i}",
-            f"rank_w1 = {rank_w1[word][0]}" if word in rank_w1 else "rank_w1 = -",
-            f"rank_w2 = {rank_w2[word][0]}" if word in rank_w2 else "rank_w2 = -"
-        ])
+        rank1 = rank_w1[word][0] if word in rank_w1 else "-"
+        rank2 = rank_w2[word][0] if word in rank_w2 else "-"
+        rank_top2 = top_w2[word] if word in top_w2 else "-"
+
+        formatted = f"\"{word} ({i})\": " + str({
+            "semantic_similarity": round(score, 6),
+            "rank_w1": rank1,
+            "rank_w2": rank2,
+            "rank_top1": i,
+            "rank_top2": rank_top2
+        }).replace("'", "\"")  # Convert to JSON-like format
+
+    annotated_top_w1_formatted.append(formatted)
+
 
     return jsonify({
         "best_5_by_corrected_rank_sum": best_words_by_corrected_rank_sum(),
         "best_5_combined": best_words_by_min_score(),
         "best_5_by_rank_sum": best_words_by_rank_sum(),
-        "annotated_top_w1": annotated_top_w1
+        "annotated_top_w1": annotated_top_w1_formatted
     })
 
 
