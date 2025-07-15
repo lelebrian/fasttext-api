@@ -87,6 +87,10 @@ def similarity():
     })
 
 
+# Recalcola rank_w1 e rank_w2 solo sulle candidate_words
+def recalculate_ranks(filtered_dict):
+    sorted_items = sorted(filtered_dict.items(), key=lambda item: -item[1])  # ordina per score decrescente
+    return {word: (i + 1, score) for i, (word, score) in enumerate(sorted_items)}
 
 @app.route("/hint")
 def hint():
@@ -128,6 +132,16 @@ def hint():
         Levenshtein.distance(w.lower(), w2.lower()) > 1 and
         all(Levenshtein.distance(w.lower(), b) > 1 for b in blacklist)
     }
+
+    # TODO: Filtrare top_w1 e top_w2 solo sulle candidate words, ricalcolare rank_w1 e rank_w2
+
+    # Crea dizionari temporanei filtrati
+    filtered_scores_w1 = {w: rank_w1[w][1] for w in candidate_words}
+    filtered_scores_w2 = {w: rank_w2[w][1] for w in candidate_words}
+
+    # Ricalcola i rank
+    rank_w1 = recalculate_ranks(filtered_scores_w1)
+    rank_w2 = recalculate_ranks(filtered_scores_w2)
 
     best = None
 
@@ -198,14 +212,32 @@ def test():
     rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
     rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
+    
+    candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+
+    candidate_words = {
+        w for w in candidate_words
+        if w.lower() not in blacklist and
+        Levenshtein.distance(w.lower(), w1.lower()) > 1 and
+        Levenshtein.distance(w.lower(), w2.lower()) > 1 and
+        all(Levenshtein.distance(w.lower(), b) > 1 for b in blacklist)
+    }
+
+    # Crea dizionari temporanei filtrati
+    filtered_scores_w1 = {w: rank_w1[w][1] for w in candidate_words}
+    filtered_scores_w2 = {w: rank_w2[w][1] for w in candidate_words}
+
+    # Ricalcola i rank
+    rank_w1 = recalculate_ranks(filtered_scores_w1)
+    rank_w2 = recalculate_ranks(filtered_scores_w2)
 
     def tag_removal_reason(word):
         wl = word.lower()
         if (
-            Levenshtein.distance(wl, w1.lower()) <= 1 or
-            Levenshtein.distance(wl, w2.lower()) <= 1
+            Levenshtein.distance(wl, w1.lower()) <= 2 or
+            Levenshtein.distance(wl, w2.lower()) <= 2
         ):
-            return "Lev1"
+            return "Lev"
         return None
 
     def compute_word_rank_and_score(model, word, target):
