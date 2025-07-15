@@ -88,9 +88,25 @@ def similarity():
 
 
 # Recalcola rank_w1 e rank_w2 solo sulle candidate_words
-def recalculate_ranks(filtered_dict):
-    sorted_items = sorted(filtered_dict.items(), key=lambda item: -item[1])  # ordina per score decrescente
-    return {word: (i + 1, score) for i, (word, score) in enumerate(sorted_items)}
+def recalculate_ranks(original_rankings, allowed_words):
+    """
+    Ricalcola i rank mantenendo l'ordine originale di similarità,
+    ma includendo solo le parole in allowed_words.
+    
+    :param original_rankings: dict {word: score}
+    :param allowed_words: set di parole ammesse
+    :return: dict {word: (rank, score)}
+    """
+    filtered = [
+        (word, score) for word, score in original_rankings.items() if word in allowed_words
+    ]
+    # Ordina decrescente per similarità
+    filtered.sort(key=lambda x: x[1], reverse=True)
+
+    return {
+        word: (i + 1, score) for i, (word, score) in enumerate(filtered)
+    }
+
 
 @app.route("/hint")
 def hint():
@@ -136,13 +152,13 @@ def hint():
 
     # TODO: Filtrare top_w1 e top_w2 solo sulle candidate words, ricalcolare rank_w1 e rank_w2
 
-    # Crea dizionari temporanei filtrati
-    filtered_scores_w1 = {w: rank_w1[w][1] for w in candidate_words}
-    filtered_scores_w2 = {w: rank_w2[w][1] for w in candidate_words}
+    # Estrai score originali
+    original_scores_w1 = {word: score for word, score in top_w1}
+    original_scores_w2 = {word: score for word, score in top_w2}
 
-    # Ricalcola i rank
-    rank_w1 = recalculate_ranks(filtered_scores_w1)
-    rank_w2 = recalculate_ranks(filtered_scores_w2)
+    # Ricalcola solo per le parole accettabili
+    rank_w1 = recalculate_ranks(original_scores_w1, candidate_words)
+    rank_w2 = recalculate_ranks(original_scores_w2, candidate_words)
 
     best = None
 
@@ -225,13 +241,13 @@ def test():
         all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
     }
 
-    # Crea dizionari temporanei filtrati
-    filtered_scores_w1 = {w: rank_w1[w][1] for w in candidate_words}
-    filtered_scores_w2 = {w: rank_w2[w][1] for w in candidate_words}
+    # Estrai score originali
+    original_scores_w1 = {word: score for word, score in top_w1}
+    original_scores_w2 = {word: score for word, score in top_w2}
 
-    # Ricalcola i rank
-    rank_w1 = recalculate_ranks(filtered_scores_w1)
-    rank_w2 = recalculate_ranks(filtered_scores_w2)
+    # Ricalcola solo per le parole accettabili
+    rank_w1 = recalculate_ranks(original_scores_w1, candidate_words)
+    rank_w2 = recalculate_ranks(original_scores_w2, candidate_words)
 
     def tag_removal_reason(word):
         wl = word.lower()
@@ -345,7 +361,7 @@ def levenshtein_similar_words():
         return jsonify({"error": "Parametro 'word' mancante"}), 400
 
     try:
-        top_words = model.most_similar(word, topn=200)
+        top_words = model.most_similar(word, topn=1000)
     except KeyError:
         return jsonify({"error": f"La parola '{word}' non è nel vocabolario"}), 404
 
