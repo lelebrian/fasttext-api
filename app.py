@@ -87,27 +87,6 @@ def similarity():
     })
 
 
-# Recalcola rank_w1 e rank_w2 solo sulle candidate_words
-def recalculate_ranks(original_rankings, allowed_words):
-    """
-    Ricalcola i rank mantenendo l'ordine originale di similarità,
-    ma includendo solo le parole in allowed_words.
-    
-    :param original_rankings: dict {word: score}
-    :param allowed_words: set di parole ammesse
-    :return: dict {word: (rank, score)}
-    """
-    filtered = [
-        (word, score) for word, score in original_rankings.items() if word in allowed_words
-    ]
-    # Ordina decrescente per similarità
-    filtered.sort(key=lambda x: x[1], reverse=True)
-
-    return {
-        word: (i + 1, score) for i, (word, score) in enumerate(filtered)
-    }
-
-
 @app.route("/hint")
 def hint():
     w1 = request.args.get("word1")
@@ -152,13 +131,11 @@ def hint():
 
     # TODO: Filtrare top_w1 e top_w2 solo sulle candidate words, ricalcolare rank_w1 e rank_w2
 
-    # Estrai score originali
-    original_scores_w1 = {word: score for word, score in top_w1}
-    original_scores_w2 = {word: score for word, score in top_w2}
+    filtered_top_w1 = [ (word, score) for word, score in top_w1 if word in candidate_words ]
+    filtered_top_w2 = [ (word, score) for word, score in top_w2 if word in candidate_words ]
 
-    # Ricalcola solo per le parole accettabili
-    rank_w1 = recalculate_ranks(original_scores_w1, candidate_words)
-    rank_w2 = recalculate_ranks(original_scores_w2, candidate_words)
+    rank_w1 = { word: (i + 1, float(score)) for i, (word, score) in enumerate(filtered_top_w1) }
+    rank_w2 = { word: (i + 1, float(score)) for i, (word, score) in enumerate(filtered_top_w2) }
 
     best = None
 
@@ -241,13 +218,12 @@ def test():
         all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
     }
 
-    # Estrai score originali
-    original_scores_w1 = {word: score for word, score in top_w1}
-    original_scores_w2 = {word: score for word, score in top_w2}
+    # TODO: Filtrare top_w1 e top_w2 solo sulle candidate words, ricalcolare rank_w1 e rank_w2
+    filtered_top_w1 = [ (word, score) for word, score in top_w1 if word in candidate_words ]
+    filtered_top_w2 = [ (word, score) for word, score in top_w2 if word in candidate_words ]
 
-    # Ricalcola solo per le parole accettabili
-    rank_w1 = recalculate_ranks(original_scores_w1, candidate_words)
-    rank_w2 = recalculate_ranks(original_scores_w2, candidate_words)
+    rank_w1 = { word: (i + 1, float(score)) for i, (word, score) in enumerate(filtered_top_w1) }
+    rank_w2 = { word: (i + 1, float(score)) for i, (word, score) in enumerate(filtered_top_w2) }
 
     def tag_removal_reason(word):
         wl = word.lower()
