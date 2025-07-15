@@ -327,8 +327,8 @@ def test():
         "best_5_by_rank_sum": best_words_by_rank_sum(),
         "top_w1_1000": top_w1[:1000],
         "top_20_word2": top_w2[:20],
-        "rank_w1_1000": rank_w1[:1000],
-        "filtered_w1_1000": filtered_top_w1[:1000]
+        "rank_w1_1000": rank_w1,
+        "filtered_w1_1000": filtered_top_w1
     })
 
 
