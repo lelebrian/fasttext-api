@@ -263,7 +263,6 @@ def test():
             s1 = rank_w1[word][1]
             s2 = rank_w2[word][1]
             adjusted = s2 * (1 + aiutino * tentative)
-            results.append((min(s1, adjusted), word, s1, s2, removal_reason))
             results.sort(reverse=True)
         return [
             {
@@ -274,7 +273,7 @@ def test():
                 "rank_in_word1": rank_w1[word][0],
                 "rank_in_word2": rank_w2[word][0]
             }
-            for ms, word, s1, s2, removal_reason in results[:n]
+            for ms, word, s1, s2 in results[:n]
         ]
 
     def best_words_by_rank_sum(n=5):
@@ -282,7 +281,7 @@ def test():
         for word in candidate_words:
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0]
-            results.append((r1 + r2, word, removal_reason))
+            results.append((r1 + r2, word))
         results.sort()
         return [
             {
@@ -292,7 +291,7 @@ def test():
                 "score_with_word1": round(rank_w1[word][1], 4),
                 "score_with_word2": round(rank_w2[word][1], 4)
             }
-            for _, word, removal_reason in results[:n]
+            for _, word in results[:n]
         ]
 
     def best_words_by_corrected_rank_sum(n=5):
@@ -302,7 +301,7 @@ def test():
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0]
             score = r1 * weight_rank1 + r2
-            results.append((score, word, removal_reason))
+            results.append((score, word))
         results.sort()
         return [
             {
@@ -314,7 +313,7 @@ def test():
                 "weight_on_rank1": round(weight_rank1, 2),
                 "weighted_rank_sum": round(score, 1)
             }
-            for score, word, removal_reason in results[:n]
+            for score, word in results[:n]
         ]
     
     annotated_top_w1_formatted = []
