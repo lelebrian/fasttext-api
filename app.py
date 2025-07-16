@@ -88,38 +88,46 @@ def similarity():
 
 @app.route("/hint")
 def hint():
+    #Argomenti
     w1 = request.args.get("word1")
     w2 = request.args.get("word2")
     tentative = int(request.args.get("tentative", 0))
+    lev_threshold = 2
+    lev_threshold_similarity = 0.7
+
+    # Parametri
     strategy = request.args.get("strategy", "corrected_rank_sum")
     limit = request.args.get("topn", default=1000, type=int)
-
     aiutino = 0.03  # per strategia "min_score"
     weight_rank1 = 1.0 + 0.3 * tentative  # per strategia "corrected_rank_sum"
 
-    # Gestione blacklist
+    # Argomento: blacklist
     blacklist_param = request.args.get("blacklist", "")
     blacklist = set(word.strip().lower() for word in blacklist_param.split(",") if word.strip())
 
+    # Check parole non nulle e in vocabolario
     if not w1 or not w2:
         return jsonify({"error": "Parametri 'word1' e 'word2' obbligatori"}), 400
 
     if w1 not in model or w2 not in model:
         return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
 
+    # Recupera le x-mila parole più simili a soluzione e a hint
     try:
         top_w1 = model.most_similar(w1, topn=limit * 2)
         top_w2 = model.most_similar(w2, topn=limit * 2)
     except KeyError:
         return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
+    # Calcola il rank e la similarità per ogni parola
     rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
     rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
 
+    # Prende come parole candidate solo quelle che sono sia in top_w1 e in top_w2
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
     candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
 
-    lev_threshold = 2
+    # Prende solo le parole con Lev distance > soglia
     candidate_words = {
         w for w in candidate_words
         if w.lower() not in blacklist and
@@ -127,14 +135,6 @@ def hint():
         Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold and
         all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
     }
-
-    # TODO: Filtrare top_w1 e top_w2 solo sulle candidate words, ricalcolare rank_w1 e rank_w2
-
-    filtered_top_w1 = [ (word, score) for word, score in top_w1 if word in candidate_words ]
-    filtered_top_w2 = [ (word, score) for word, score in top_w2 if word in candidate_words ]
-
-    rank_w1 = { word: (i + 1, float(score)) for i, (word, score) in enumerate(filtered_top_w1) }
-    rank_w2 = { word: (i + 1, float(score)) for i, (word, score) in enumerate(filtered_top_w2) }
 
     best = None
 
