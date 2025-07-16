@@ -59,7 +59,6 @@ def load_with_progress(filename, max_words):
 # Loading kv
 model = KeyedVectors.load("it/fasttext_100k.kv", mmap='r')  # local
 
-
 # Loading vec
 num_words = 100000
 #model = load_with_progress("it\cc.it.300.vec", num_words) # NUMERO PAROLE
