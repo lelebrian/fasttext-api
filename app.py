@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from gensim.models import KeyedVectors
 import psutil
 import os
 import numpy as np
 import Levenshtein
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -376,10 +377,10 @@ def testnew():
         top_w1 = model.most_similar(w1, topn=limit)
         top_w2 = model.most_similar(w2, topn=limit2)
 
-        top_w1 = {
+        top_w1 = [
             w for w in top_w1
-            if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
-        }
+            if Levenshtein.distance(w[0].lower(), w1.lower()) > lev_threshold
+        ]
     except KeyError:
         return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
@@ -420,15 +421,18 @@ def testnew():
                 return {"rank": rank, "score": round(similarity, 4)}
         return None
 
-    def best_words_by_min_score(n=5):
+    def best_words_by_max_min_score(n=5):
         results = []
         for word in candidate_words:
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0] if word in rank_w2 else limit2
             score1 = round(rank_w1[word][1], 4)
             score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
-            score = (score1 * (1 + aiutino * tentative)) + score2
+            score = min(score1 * (1 + aiutino * tentative), score2)
             results.append((score, word, r1, r2, score1, score2))
+
+        results.sort(reverse=True)
+
         return [
             {
                 "word": word,
@@ -438,7 +442,7 @@ def testnew():
                 "rank_in_word1": r1,
                 "rank_in_word2": r2
             }
-            for score, word, score1, score2, r1, r2 in results[:n]
+            for score, word, r1, r2, score1, score2 in results[:n]
         ]
 
     def best_words_by_corrected_rank_sum(n=5):
@@ -467,30 +471,47 @@ def testnew():
     
     annotated_top_w1_formatted = []
 
+    top_words_by_rank = {item["word"] for item in best_words_by_corrected_rank_sum()}
+    top_words_by_score = {item["word"] for item in best_words_by_max_min_score()}
+
     for i, (word, score) in enumerate(top_w1, start=1):
         rank1 = rank_w1[word][0]
         rank2 = rank_w2[word][0] if word in rank_w2 else limit2
-        score1 = round(rank_w1[word][1], 4)
-        score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
-        score_by_rank = rank1 * weight_rank1 + rank2
-        score_by_semantic = (score1 * (1 + aiutino * tentative)) + score2
+        score1 = round(rank_w1[word][1], 3)
+        score2 = round(rank_w2[word][1], 3) if word in rank_w2 else 0
+        score_by_rank = int(round(rank1 * weight_rank1 + rank2, 0))
+        score_min_by_semantic = round(min(score1 * (1 + aiutino * tentative), score2), 3)
+        #score_sum_by_semantic = round((score1 * (1 + aiutino * tentative)) + score2, 3)
 
-        formatted = f"\"{word} ({i})\": " + str({
-            "rank1": rank1,
-            "rank2": rank2,
-            "rank_total": score_by_rank,
-            "score1": score1,
-            "score2": score2,
-            "score_total": score_by_semantic,
-        }).replace("'", "\"")  # Convert to JSON-like format
+        formatted = " " + f'{word}'.ljust(15) + ": " + str({
+            "r1": f'{rank1}'.rjust(5),
+            "r2": f'{rank2}'.rjust(5),
+            "rank": f'{score_by_rank}'.rjust(5),
+            "s1": f'{score1}'.rjust(5),
+            "s2": f'{score2}'.rjust(5),
+            #"scoresum": f'{score_sum_b"y_semantic}'.rjust(5),
+            "scoremin": f'{score_min_by_semantic}'.rjust(5),
+        }).replace("'", "")
+
+        if word in top_words_by_rank:
+            formatted += " *R*"
+        else:
+            formatted += "    "
+
+        if word in top_words_by_score:
+            formatted += " *S*"
+        else:
+            formatted += "    "
+
+        formatted += "    "
 
         annotated_top_w1_formatted.append(formatted)
 
-    return jsonify({
+    return Response(json.dumps({
         "best_5_by_corrected_rank_sum": best_words_by_corrected_rank_sum(),
-        "best_5_combined": best_words_by_min_score(),
+        "best_5_combined": best_words_by_max_min_score(),
         "top_w1": annotated_top_w1_formatted
-    })
+    }, ensure_ascii=False), mimetype='application/json')
 
 
 @app.route("/lev")
