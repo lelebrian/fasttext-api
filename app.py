@@ -423,18 +423,18 @@ def testnew():
             r2 = rank_w2[word][0] if word in rank_w2 else limit2
             score1 = round(rank_w1[word][1], 4)
             score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
-            adjusted = score2 * (1 + aiutino * tentative)
-            results.sort(reverse=True)
+            score = (score1 * (1 + aiutino * tentative)) + score2
+            results.append((score, word, r1, r2, score1, score2))
         return [
             {
                 "word": word,
-                "min_score": round(adjusted, 4),
+                "min_score": round(score, 4),
                 "score_with_word1": score1,
                 "score_with_word2": score2,
                 "rank_in_word1": r1,
                 "rank_in_word2": r2
             }
-            for adjusted, word, score1, score2, r1, r2 in results[:n]
+            for score, word, score1, score2, r1, r2 in results[:n]
         ]
 
     def best_words_by_corrected_rank_sum(n=5):
@@ -446,7 +446,7 @@ def testnew():
             score1 = round(rank_w1[word][1], 4)
             score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
             score = r1 * weight_rank1 + r2
-            results.append((score, word))
+            results.append((score, word, r1, r2, score1, score2))
         results.sort()
         return [
             {
