@@ -343,7 +343,7 @@ def test():
 
 
 @app.route("/testnew")
-def test():
+def testnew():
     #Argomenti
     w1 = request.args.get("word1")
     w2 = request.args.get("word2")
@@ -480,11 +480,15 @@ def test():
     for i, (word, score) in enumerate(top_w1, start=1):
         rank1 = rank_w1[word][0] if word in rank_w1 else "-"
         rank2 = rank_w2[word][0] if word in rank_w2 else "-"
+        score1 = rank_w1[word][1] if word in rank_w1 else "-"
+        score2 = rank_w2[word][1] if word in rank_w2 else "-"
 
         formatted = f"\"{word} ({i})\": " + str({
             "semantic_similarity": round(score, 6),
-            "rank_w1": rank1,
-            "rank_w2": rank2,
+            "rank1": rank1,
+            "rank2": rank2,
+            "score1": score1,
+            "score2": score2,
         }).replace("'", "\"")  # Convert to JSON-like format
 
         annotated_top_w1_formatted.append(formatted)
