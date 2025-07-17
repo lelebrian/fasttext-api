@@ -342,6 +342,161 @@ def test():
     })
 
 
+@app.route("/testnew")
+def test():
+    #Argomenti
+    w1 = request.args.get("word1")
+    w2 = request.args.get("word2")
+    tentative = int(request.args.get("tentative", 0))
+    lev_threshold = 2
+    lev_threshold_similarity = 0.7
+
+    # Parametri
+    strategy = request.args.get("strategy", "corrected_rank_sum")
+    limit = request.args.get("topn", default=1000, type=int)
+    limit2 = 10000
+    aiutino = 0.03  # per strategia "min_score"
+    weight_rank1 = 1.0 + 0.3 * tentative  # per strategia "corrected_rank_sum"
+
+    # Argomento: blacklist
+    blacklist_param = request.args.get("blacklist", "")
+    blacklist = set(word.strip().lower() for word in blacklist_param.split(",") if word.strip())
+
+    # Argomento: check
+    check = request.args.get("check", None)
+
+    # Check parole non nulle e in vocabolario
+    if not w1 or not w2:
+        return jsonify({"error": "Parametri 'word1' e 'word2' obbligatori"}), 400
+    if w1 not in model or w2 not in model:
+        return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
+
+    # Recupera le x-mila parole più simili a soluzione e a hint
+    try:
+        top_w1 = model.most_similar(w1, topn=limit)
+        top_w2 = model.most_similar(w2, topn=limit2)
+    except KeyError:
+        return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
+
+    # Calcola il rank e la similarità per ogni parola
+    rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
+    rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
+    
+    # Prende come parole candidate solo quelle che sono sia in top_w1 e in top_w2
+    candidate_words = rank_w1.keys()
+    candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+
+    # Prende solo le parole con Lev distance > soglia
+    candidate_words = {
+        w for w in candidate_words
+        if w.lower() not in blacklist and
+        Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold and
+        Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold and
+        all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
+    }
+
+    def compute_word_rank_and_score(model, word, target):
+        try:
+            similarity = model.similarity(word, target)
+        except KeyError:
+            return None
+        all_similarities = []
+        for other in model.index_to_key:
+            if other == word:
+                continue
+            try:
+                score = model.similarity(word, other)
+                all_similarities.append((other, score))
+            except KeyError:
+                continue
+        all_similarities.sort(key=lambda x: x[1], reverse=True)
+        for rank, (w, _) in enumerate(all_similarities, start=1):
+            if w == target:
+                return {"rank": rank, "score": round(similarity, 4)}
+        return None
+
+    def best_words_by_min_score(n=5):
+        aiutino = 0.03
+        results = []
+        for word in candidate_words:
+            s1 = rank_w1[word][1]
+            s2 = rank_w2[word][1]
+            adjusted = s2 * (1 + aiutino * tentative)
+            results.sort(reverse=True)
+        return [
+            {
+                "word": word,
+                "min_score": round(ms, 4),
+                "score_with_word1": round(s1, 4),
+                "score_with_word2": round(s2, 4),
+                "rank_in_word1": rank_w1[word][0],
+                "rank_in_word2": rank_w2[word][0]
+            }
+            for ms, word, s1, s2 in results[:n]
+        ]
+
+    def best_words_by_rank_sum(n=5):
+        results = []
+        for word in candidate_words:
+            r1 = rank_w1[word][0]
+            r2 = rank_w2[word][0]
+            results.append((r1 + r2, word))
+        results.sort()
+        return [
+            {
+                "word": word,
+                "rank_in_word1": rank_w1[word][0],
+                "rank_in_word2": rank_w2[word][0],
+                "score_with_word1": round(rank_w1[word][1], 4),
+                "score_with_word2": round(rank_w2[word][1], 4)
+            }
+            for _, word in results[:n]
+        ]
+
+    def best_words_by_corrected_rank_sum(n=5):
+        weight_rank1 = 1.0 + 0.3 * tentative
+        results = []
+        for word in candidate_words:
+            r1 = rank_w1[word][0]
+            r2 = rank_w2[word][0]
+            score = r1 * weight_rank1 + r2
+            results.append((score, word))
+        results.sort()
+        return [
+            {
+                "word": word,
+                "rank_in_word1": rank_w1[word][0],
+                "rank_in_word2": rank_w2[word][0],
+                "score_with_word1": round(rank_w1[word][1], 4),
+                "score_with_word2": round(rank_w2[word][1], 4),
+                "weight_on_rank1": round(weight_rank1, 2),
+                "weighted_rank_sum": round(score, 1)
+            }
+            for score, word in results[:n]
+        ]
+    
+    annotated_top_w1_formatted = []
+
+    for i, (word, score) in enumerate(top_w1, start=1):
+        rank1 = rank_w1[word][0] if word in rank_w1 else "-"
+        rank2 = rank_w2[word][0] if word in rank_w2 else "-"
+
+        formatted = f"\"{word} ({i})\": " + str({
+            "semantic_similarity": round(score, 6),
+            "rank_w1": rank1,
+            "rank_w2": rank2,
+        }).replace("'", "\"")  # Convert to JSON-like format
+
+        annotated_top_w1_formatted.append(formatted)
+
+    return jsonify({
+        "best_5_by_corrected_rank_sum": best_words_by_corrected_rank_sum(),
+        "best_5_combined": best_words_by_min_score(),
+        "best_5_by_rank_sum": best_words_by_rank_sum(),
+        "top_w1": annotated_top_w1_formatted
+    })
+
+
 @app.route("/lev")
 def levenshtein_similar_words():
     word = request.args.get("word")
