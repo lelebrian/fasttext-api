@@ -375,6 +375,11 @@ def testnew():
     try:
         top_w1 = model.most_similar(w1, topn=limit)
         top_w2 = model.most_similar(w2, topn=limit2)
+
+        top_w1 = {
+            w for w in top_w1
+            if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
+        }
     except KeyError:
         return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
