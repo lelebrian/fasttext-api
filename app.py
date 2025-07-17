@@ -468,10 +468,10 @@ def testnew():
     annotated_top_w1_formatted = []
 
     for i, (word, score) in enumerate(top_w1, start=1):
-        rank1 = rank_w1[word][0] if word in rank_w1 else "-"
-        rank2 = rank_w2[word][0] if word in rank_w2 else "-"
-        score1 = rank_w1[word][1] if word in rank_w1 else "-"
-        score2 = rank_w2[word][1] if word in rank_w2 else "-"
+        rank1 = rank_w1[word][0]
+        rank2 = rank_w2[word][0] if word in rank_w2 else limit2
+        score1 = round(rank_w1[word][1], 4)
+        score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
         score_by_rank = rank1 * weight_rank1 + rank2
         score_by_semantic = (score1 * (1 + aiutino * tentative)) + score2
 
