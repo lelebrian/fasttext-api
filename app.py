@@ -416,7 +416,6 @@ def testnew():
         return None
 
     def best_words_by_min_score(n=5):
-        aiutino = 0.03
         results = []
         for word in candidate_words:
             r1 = rank_w1[word][0]
@@ -468,13 +467,16 @@ def testnew():
         rank2 = rank_w2[word][0] if word in rank_w2 else "-"
         score1 = rank_w1[word][1] if word in rank_w1 else "-"
         score2 = rank_w2[word][1] if word in rank_w2 else "-"
+        score_by_rank = rank1 * weight_rank1 + rank2
+        score_by_semantic = (score1 * (1 + aiutino * tentative)) + score2
 
         formatted = f"\"{word} ({i})\": " + str({
-            "semantic_similarity": round(score, 6),
             "rank1": rank1,
             "rank2": rank2,
+            "rank_total": score_by_rank,
             "score1": score1,
             "score2": score2,
+            "score_total": score_by_semantic,
         }).replace("'", "\"")  # Convert to JSON-like format
 
         annotated_top_w1_formatted.append(formatted)
