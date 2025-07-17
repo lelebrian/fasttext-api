@@ -422,7 +422,7 @@ def testnew():
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0] if word in rank_w2 else limit2
             score1 = round(rank_w1[word][1], 4)
-            score2 = round(rank_w2[word][1], 4) if word in rank_we else 0
+            score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
             adjusted = score2 * (1 + aiutino * tentative)
             results.sort(reverse=True)
         return [
@@ -444,7 +444,7 @@ def testnew():
             r1 = rank_w1[word][0]
             r2 = rank_w2[word][0] if word in rank_w2 else limit2
             score1 = round(rank_w1[word][1], 4)
-            score2 = round(rank_w2[word][1], 4) if word in rank_we else 0
+            score2 = round(rank_w2[word][1], 4) if word in rank_w2 else 0
             score = r1 * weight_rank1 + r2
             results.append((score, word))
         results.sort()
