@@ -419,38 +419,22 @@ def testnew():
         aiutino = 0.03
         results = []
         for word in candidate_words:
-            s1 = rank_w1[word][1]
-            s2 = rank_w2[word][1]
-            adjusted = s2 * (1 + aiutino * tentative)
+            r1 = rank_w1[word][0]
+            r2 = rank_w2[word][0] if word in rank_w2 else limit2
+            score1 = round(rank_w1[word][1], 4)
+            score2 = round(rank_w2[word][1], 4) if word in rank_we else 0
+            adjusted = score2 * (1 + aiutino * tentative)
             results.sort(reverse=True)
         return [
             {
                 "word": word,
-                "min_score": round(ms, 4),
-                "score_with_word1": round(s1, 4),
-                "score_with_word2": round(s2, 4),
-                "rank_in_word1": rank_w1[word][0],
-                "rank_in_word2": rank_w2[word][0]
+                "min_score": round(adjusted, 4),
+                "score_with_word1": score1,
+                "score_with_word2": score2,
+                "rank_in_word1": r1,
+                "rank_in_word2": r2
             }
-            for ms, word, s1, s2 in results[:n]
-        ]
-
-    def best_words_by_rank_sum(n=5):
-        results = []
-        for word in candidate_words:
-            r1 = rank_w1[word][0]
-            r2 = rank_w2[word][0]
-            results.append((r1 + r2, word))
-        results.sort()
-        return [
-            {
-                "word": word,
-                "rank_in_word1": rank_w1[word][0],
-                "rank_in_word2": rank_w2[word][0],
-                "score_with_word1": round(rank_w1[word][1], 4),
-                "score_with_word2": round(rank_w2[word][1], 4)
-            }
-            for _, word in results[:n]
+            for adjusted, word, score1, score2, r1, r2 in results[:n]
         ]
 
     def best_words_by_corrected_rank_sum(n=5):
@@ -458,21 +442,23 @@ def testnew():
         results = []
         for word in candidate_words:
             r1 = rank_w1[word][0]
-            r2 = rank_w2[word][0]
+            r2 = rank_w2[word][0] if word in rank_w2 else limit2
+            score1 = round(rank_w1[word][1], 4)
+            score2 = round(rank_w2[word][1], 4) if word in rank_we else 0
             score = r1 * weight_rank1 + r2
             results.append((score, word))
         results.sort()
         return [
             {
                 "word": word,
-                "rank_in_word1": rank_w1[word][0],
-                "rank_in_word2": rank_w2[word][0],
-                "score_with_word1": round(rank_w1[word][1], 4),
-                "score_with_word2": round(rank_w2[word][1], 4),
+                "rank_in_word1": r1,
+                "rank_in_word2": r2,
+                "score_with_word1": score1,
+                "score_with_word2": score2,
                 "weight_on_rank1": round(weight_rank1, 2),
                 "weighted_rank_sum": round(score, 1)
             }
-            for score, word in results[:n]
+            for score, word, r1, r2, score1, score2 in results[:n]
         ]
     
     annotated_top_w1_formatted = []
@@ -496,7 +482,6 @@ def testnew():
     return jsonify({
         "best_5_by_corrected_rank_sum": best_words_by_corrected_rank_sum(),
         "best_5_combined": best_words_by_min_score(),
-        "best_5_by_rank_sum": best_words_by_rank_sum(),
         "top_w1": annotated_top_w1_formatted
     })
 
