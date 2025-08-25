@@ -99,6 +99,7 @@ def hint():
     # Parametri
     strategy = request.args.get("strategy", "corrected_rank_sum")
     limit = request.args.get("topn", default=1000, type=int)
+    record_best = request.args.get("best", default=1000, type=int)
     aiutino = 0.03  # per strategia "min_score"
     weight_rank1 = 1.0 + 0.3 * tentative  # per strategia "corrected_rank_sum"
 
@@ -115,7 +116,10 @@ def hint():
 
     # Recupera le x-mila parole più simili a soluzione e a hint
     try:
-        top_w1 = model.most_similar(w1, topn=limit * 2)
+        if strategy == "converge":
+            top_w1 = model.most_similar(w1, record_best)
+        else:
+            top_w1 = model.most_similar(w1, topn=limit * 2)
         top_w2 = model.most_similar(w2, topn=limit * 2)
     except KeyError:
         return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
@@ -146,7 +150,10 @@ def hint():
         rank1 = rank_w1[word][0]
         rank2 = rank_w2[word][0]
 
-        if strategy == "rank_sum":
+        if strategy == "converge":
+            score = rank2
+            is_better = best is None or score < best["score"]
+        elif strategy == "rank_sum":
             score = rank1 + rank2
             is_better = best is None or score < best["score"]
         elif strategy == "corrected_rank_sum":
@@ -182,6 +189,8 @@ def hint():
 
     else:
         return jsonify({"error": "Nessuna parola trovata"}), 404
+
+
 
 @app.route("/test")
 def testnew():
