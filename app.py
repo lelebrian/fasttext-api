@@ -97,6 +97,7 @@ def hint():
     w1 = request.args.get("word1")
     w2 = request.args.get("word2")
     tentative = int(request.args.get("tentative", 0))
+    weight2 = int(request.args.get("weight", 1))
     lev_threshold = 2
     lev_threshold_similarity = 0.7
 
@@ -246,7 +247,7 @@ def hint():
             rank2 = limit2  # new to avoid loops or going too far
 
         if strategy == "converge":
-            score = rank2
+            score = weight2*rank2 + (1-weight2)*rank1
             is_better = best is None or score < best["score"]
         elif strategy == "rank_sum":
             score = rank1 + rank2
