@@ -105,6 +105,178 @@ def hint():
     
     ### TODO: EVALUATE 2000 as limit
     limit = request.args.get("topn", default=1000, type=int)
+    limit2 = 10000
+    
+    record_best = request.args.get("best", default=1000, type=int)
+    aiutino = 0.03  # per strategia "min_score"
+    weight_rank1 = 1.0 + 0.3 * tentative  # per strategia "corrected_rank_sum"
+
+    is_test = request.args.get("test", default=0, type=int)
+    track = []
+
+    # Argomento: blacklist
+    blacklist_param = request.args.get("blacklist", "")
+    blacklist = set(word.strip().lower() for word in blacklist_param.split(",") if word.strip())
+
+    # Check parole non nulle e in vocabolario
+    if not w1 or not w2:
+        return jsonify({"error": "Parametri 'word1' e 'word2' obbligatori"}), 400
+
+    if w1 not in model or w2 not in model:
+        return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
+
+    candidate_words = set()
+
+    try:
+        if strategy == "converge":
+            top_w1 = model.most_similar(w1, topn=record_best)
+        else:
+            top_w1 = model.most_similar(w1, topn=limit)
+        top_w2 = model.most_similar(w2, topn=limit)
+    except KeyError:
+        return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
+
+    # Calcola il rank e la similarità per ogni parola
+    rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
+    rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
+
+    logging.info("Number of words in rank_w1: %s", len(rank_w1))   # 👈 this will log to console/file
+    logging.info("Number of words in rank_w2: %s", len(rank_w2))   # 👈 this will log to console/file
+
+    # Candidati: presenti in entrambe le liste e non blacklistati
+    candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
+
+    logging.info("Candidate words after first intersection: %s", len(candidate_words))
+
+    candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+
+    logging.info("Candidate words after blacklist: %s", len(candidate_words))
+
+    # Filtra per Levenshtein
+    candidate_words = {
+        w for w in candidate_words
+        if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
+        and Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold
+        and all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
+    }
+
+    logging.info("Candidate words after lev distance: %s", len(candidate_words))
+
+    if candidate_words:
+        logging.info("Candidates found")
+        #all good  # ✅ trovato almeno un candidato, uscita
+    else:
+        logging.info("Iteration %s: no candidates found, expanding search to very big list - limit2")
+        top_w2 = model.most_similar(w2, topn=limit2)
+        rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
+
+        # Candidati: presenti in entrambe le liste e non blacklistati
+        candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
+        logging.info("Candidate words - new intersection: %s", len(candidate_words))
+
+        candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+        logging.info("Candidate words after blacklist: %s", len(candidate_words))
+
+         # Filtra per Levenshtein
+        candidate_words = {
+            w for w in candidate_words
+            if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
+            and Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold
+            and all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
+        }
+        logging.info("Candidate words after lev distance: %s", len(candidate_words))        
+
+    if not candidate_words:
+        return jsonify({"error": "Nessuna parola trovata"}), 404
+        
+    best = None
+
+    for word in candidate_words:
+
+        score1 = rank_w1[word][1]
+        score2 = rank_w2[word][1]
+        rank1 = rank_w1[word][0]
+        rank2 = rank_w2[word][0]
+
+        if strategy == "converge":
+            score = rank2
+            is_better = best is None or score < best["score"]
+        elif strategy == "rank_sum":
+            score = rank1 + rank2
+            is_better = best is None or score < best["score"]
+        elif strategy == "corrected_rank_sum":
+            score = rank1 * weight_rank1 + rank2
+            is_better = best is None or score < best["score"]
+        elif strategy == "corrected_min_score":
+            adjusted_score2 = score2 * (1 + aiutino * tentative)
+            score = min(score1, adjusted_score2)
+            is_better = best is None or score > best["score"]
+        else:
+            return jsonify({"error": "Strategia non valida"}), 400
+
+        if is_test == 1:
+            track_word = {
+                "word": word,
+                "score": round(score, 4),
+                "strategy": strategy,
+                "score_with_word1": round(score1, 4),
+                "score_with_word2": round(score2, 4),
+                "rank_in_word1": rank1,
+                "rank_in_word2": rank2
+            }
+        
+            track.append(track_word)
+
+        if is_better:
+            best = {
+                "word": word,
+                "score": round(score, 4),
+                "strategy": strategy,
+                "score_with_word1": round(score1, 4),
+                "score_with_word2": round(score2, 4),
+                "rank_in_word1": rank1,
+                "rank_in_word2": rank2
+            }
+
+    print_ram_usage()
+
+    if best:
+        if is_test == 1:
+            return jsonify({
+                "word": best["word"],
+                "rank_sum": int(best["rank_in_word1"] + best["rank_in_word2"]),
+                "rank_1": int(best["rank_in_word1"]),
+                "rank_2": int(best["rank_in_word2"]),
+                "track": track   # <--- include here
+            })
+        else:
+            return jsonify({
+                "word": best["word"],
+                "rank_sum": int(best["rank_in_word1"] + best["rank_in_word2"]),
+                "rank_1": int(best["rank_in_word1"]),
+                "rank_2": int(best["rank_in_word2"])
+            })
+
+    else:
+        return jsonify({"error": "Nessuna parola trovata"}), 404
+
+
+
+
+@app.route("/hint_save")
+def hint_save():
+    #Argomenti
+    w1 = request.args.get("word1")
+    w2 = request.args.get("word2")
+    tentative = int(request.args.get("tentative", 0))
+    lev_threshold = 2
+    lev_threshold_similarity = 0.7
+
+    # Parametri
+    strategy = request.args.get("strategy", "corrected_rank_sum")
+    
+    ### TODO: EVALUATE 2000 as limit
+    limit = request.args.get("topn", default=1000, type=int)
     
     record_best = request.args.get("best", default=1000, type=int)
     aiutino = 0.03  # per strategia "min_score"
@@ -243,6 +415,9 @@ def hint():
 
     else:
         return jsonify({"error": "Nessuna parola trovata"}), 404
+
+
+
 
 @app.route("/test")
 def testnew():
