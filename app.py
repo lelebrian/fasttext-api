@@ -102,7 +102,10 @@ def hint():
 
     # Parametri
     strategy = request.args.get("strategy", "corrected_rank_sum")
+    
+    ### TODO: EVALUATE 2000 as limit
     limit = request.args.get("topn", default=1000, type=int)
+    
     record_best = request.args.get("best", default=1000, type=int)
     aiutino = 0.03  # per strategia "min_score"
     weight_rank1 = 1.0 + 0.3 * tentative  # per strategia "corrected_rank_sum"
@@ -124,8 +127,6 @@ def hint():
     max_iterations = 10   # you can tweak this
     iteration = 1
     candidate_words = set()
-    top_w2 = model.most_similar(w2, topn=limit)
-    rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
 
     while iteration <= max_iterations and not candidate_words:
         try:
@@ -133,11 +134,13 @@ def hint():
                 top_w1 = model.most_similar(w1, topn=record_best * iteration * iteration)
             else:
                 top_w1 = model.most_similar(w1, topn=limit * iteration)
+            top_w2 = model.most_similar(w2, topn=limit * iteration)
         except KeyError:
             return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
         # Calcola il rank e la similarità per ogni parola
         rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
+        rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
 
         logging.info("Number of words in rank_w1: %s", len(rank_w1))   # 👈 this will log to console/file
         logging.info("Number of words in rank_w2: %s", len(rank_w2))   # 👈 this will log to console/file
