@@ -195,8 +195,10 @@ def hint():
 
         top_w1 = model.most_similar(w1, topn=limit2)
         rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
+
+        logging.info("Relading top_w1 and rank_1 - worda are : %s", len(rank_w1.keys()))
         
-        # Candidati: presenti in entrambe le liste e non blacklistati
+        # Candidati: presenti in w1 e non blacklistati
         candidate_words = set(rank_w1.keys())
         logging.info("Candidate words - no intersection: %s", len(candidate_words))
 
