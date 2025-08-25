@@ -121,7 +121,7 @@ def hint():
     # Recupera le x-mila parole più simili a soluzione e a hint
     try:
         if strategy == "converge":
-            top_w1 = model.most_similar(w1, record_best)
+            top_w1 = model.most_similar(w1, topn=record_best)
         else:
             top_w1 = model.most_similar(w1, topn=limit * 2)
         top_w2 = model.most_similar(w2, topn=limit * 2)
@@ -225,7 +225,7 @@ def hint_test():
     # Recupera le x-mila parole più simili a soluzione e a hint
     try:
         if strategy == "converge":
-            top_w1 = model.most_similar(w1, record_best)
+            top_w1 = model.most_similar(w1, topn=record_best)
         else:
             top_w1 = model.most_similar(w1, topn=limit * 2)
         top_w2 = model.most_similar(w2, topn=limit * 2)
