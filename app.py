@@ -188,7 +188,7 @@ def hint():
 
 
     if candidate_words:
-        logging.info("Candidates found at 2nd interaction")
+        logging.info("Candidates found at 1st or 2nd interaction")
         #all good  # ✅ trovato almeno un candidato, uscita
     else:
         logging.info("Iteration %s: no candidates found, expanding search to just w1")
@@ -279,6 +279,7 @@ def hint():
                 "rank_in_word1": rank1,
                 "rank_in_word2": rank2
             }
+            logging.info("New best is: %s", best)
 
     print_ram_usage()
 
