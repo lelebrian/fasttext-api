@@ -126,6 +126,7 @@ def hint():
         return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
 
     candidate_words = set()
+    emergency_search = False
 
     try:
         if strategy == "converge":
@@ -186,33 +187,34 @@ def hint():
         }
         logging.info("Candidate words after lev distance: %s", len(candidate_words))        
 
+        if candidate_words:
+            logging.info("Candidates found at 2nd interaction")
+            #all good  # ✅ trovato almeno un candidato, uscita
+        else:
+            logging.info("Iteration %s: no candidates found, expanding search to just w1")
 
-    if candidate_words:
-        logging.info("Candidates found at 1st or 2nd interaction")
-        #all good  # ✅ trovato almeno un candidato, uscita
-    else:
-        logging.info("Iteration %s: no candidates found, expanding search to just w1")
+            emergency_search = True;
 
-        top_w1 = model.most_similar(w1, topn=limit2)
-        rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
+            top_w1 = model.most_similar(w1, topn=limit)
+            rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
 
-        logging.info("Relading top_w1 and rank_1 - worda are : %s", len(rank_w1.keys()))
-        
-        # Candidati: presenti in w1 e non blacklistati
-        candidate_words = set(rank_w1.keys())
-        logging.info("Candidate words - no intersection: %s", len(candidate_words))
+            logging.info("Relading top_w1 and rank_1 - worda are : %s", len(rank_w1.keys()))
+            
+            # Candidati: presenti in w1 e non blacklistati
+            candidate_words = set(rank_w1.keys())
+            logging.info("Candidate words - no intersection: %s", len(candidate_words))
 
-        candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
-        logging.info("Candidate words after blacklist: %s", len(candidate_words))
+            candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+            logging.info("Candidate words after blacklist: %s", len(candidate_words))
 
-         # Filtra per Levenshtein
-        candidate_words = {
-            w for w in candidate_words
-            if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
-            and Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold
-            and all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
-        }
-        logging.info("Candidate words after lev distance: %s", len(candidate_words))        
+            # Filtra per Levenshtein
+            candidate_words = {
+                w for w in candidate_words
+                if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
+                and Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold
+                and all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
+            }
+            logging.info("Candidate words after lev distance: %s", len(candidate_words))        
 
     if not candidate_words:
         return jsonify({"error": "Nessuna parola trovata"}), 404
@@ -239,6 +241,9 @@ def hint():
             rank2 = rank_w2[word][0]
         else:
             rank2 = limit2
+
+        if (emergency_search):
+            rank2 = limit2  # new to avoid loops or going too far
 
         if strategy == "converge":
             score = rank2
