@@ -163,7 +163,7 @@ def hint():
     logging.info("Candidate words after lev distance: %s", len(candidate_words))
 
     if candidate_words:
-        logging.info("Candidates found")
+        logging.info("Candidates found at 1st interaction")
         #all good  # ✅ trovato almeno un candidato, uscita
     else:
         logging.info("Iteration %s: no candidates found, expanding search to very big list - limit2")
@@ -186,6 +186,29 @@ def hint():
         }
         logging.info("Candidate words after lev distance: %s", len(candidate_words))        
 
+
+    if candidate_words:
+        logging.info("Candidates found at 2nd interaction")
+        #all good  # ✅ trovato almeno un candidato, uscita
+    else:
+        logging.info("Iteration %s: no candidates found, expanding search to just w1")
+        
+        # Candidati: presenti in entrambe le liste e non blacklistati
+        candidate_words = set(rank_w1.keys())
+        logging.info("Candidate words - no intersection: %s", len(candidate_words))
+
+        candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+        logging.info("Candidate words after blacklist: %s", len(candidate_words))
+
+         # Filtra per Levenshtein
+        candidate_words = {
+            w for w in candidate_words
+            if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
+            and Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold
+            and all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
+        }
+        logging.info("Candidate words after lev distance: %s", len(candidate_words))        
+
     if not candidate_words:
         return jsonify({"error": "Nessuna parola trovata"}), 404
         
@@ -194,9 +217,16 @@ def hint():
     for word in candidate_words:
 
         score1 = rank_w1[word][1]
-        score2 = rank_w2[word][1]
+        if word in rank_w2:
+            score2 = rank_w2[word][1]
+        else:
+            score2 = 0
+        
         rank1 = rank_w1[word][0]
-        rank2 = rank_w2[word][0]
+        if word in rank_w2:
+            rank2 = rank_w2[word][0]
+        else:
+            rank2 = limit2
 
         if strategy == "converge":
             score = rank2
