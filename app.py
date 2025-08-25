@@ -121,7 +121,7 @@ def hint():
     if w1 not in model or w2 not in model:
         return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
 
-    max_iterations = 20   # you can tweak this
+    max_iterations = 5   # you can tweak this
     iteration = 1
     candidate_words = set()
     top_w2 = model.most_similar(w2, topn=limit)
@@ -130,9 +130,9 @@ def hint():
     while iteration <= max_iterations and not candidate_words:
         try:
             if strategy == "converge":
-                top_w1 = model.most_similar(w1, topn=record_best * iteration)
+                top_w1 = model.most_similar(w1, topn=record_best * iteration * iteration)
             else:
-                top_w1 = model.most_similar(w1, topn=limit * iteration)
+                top_w1 = model.most_similar(w1, topn=limit * iteration * iteration)
         except KeyError:
             return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
