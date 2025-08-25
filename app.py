@@ -169,7 +169,8 @@ def hint():
 
     if not candidate_words:
         return jsonify({"error": "Nessuna parola trovata dopo %s iterazioni" % max_iterations}), 404
-        best = None
+        
+    best = None
 
     for word in candidate_words:
 
