@@ -192,7 +192,7 @@ def hint():
 
 
 @app.route("/hint_test")
-def hint():
+def hint_test():
     #Argomenti
     w1 = request.args.get("word1")
     w2 = request.args.get("word2")
