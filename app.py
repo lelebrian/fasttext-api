@@ -118,34 +118,45 @@ def hint():
     if w1 not in model or w2 not in model:
         return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
 
-    # Recupera le x-mila parole più simili a soluzione e a hint
-    try:
-        if strategy == "converge":
-            top_w1 = model.most_similar(w1, topn=record_best)
-        else:
-            top_w1 = model.most_similar(w1, topn=limit * 2)
-        top_w2 = model.most_similar(w2, topn=limit * 2)
-    except KeyError:
-        return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
-
-    # Calcola il rank e la similarità per ogni parola
-    rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
+    max_iterations = 20   # you can tweak this
+    iteration = 1
+    candidate_words = set()
+    top_w2 = model.most_similar(w2, topn=limit)
     rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
 
-    # Prende come parole candidate solo quelle che sono sia in top_w1 e in top_w2
-    candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
-    candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+    while iteration <= max_iterations and not candidate_words:
+        try:
+            if strategy == "converge":
+                top_w1 = model.most_similar(w1, topn=record_best * iteration)
+            else:
+                top_w1 = model.most_similar(w1, topn=limit * iteration)
+        except KeyError:
+            return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
-    # Prende solo le parole con Lev distance > soglia
-    candidate_words = {
-        w for w in candidate_words
-        if w.lower() not in blacklist and
-        Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold and
-        Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold and
-        all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
-    }
+        # Calcola il rank e la similarità per ogni parola
+        rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
 
-    best = None
+        # Candidati: presenti in entrambe le liste e non blacklistati
+        candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
+        candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+
+        # Filtra per Levenshtein
+        candidate_words = {
+            w for w in candidate_words
+            if Levenshtein.distance(w.lower(), w1.lower()) > lev_threshold
+            and Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold
+            and all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
+        }
+
+        if candidate_words:
+            break  # ✅ trovato almeno un candidato, uscita
+        else:
+            logging.info("Iteration %s: no candidates found, expanding search...", iteration)
+            iteration += 1
+
+    if not candidate_words:
+        return jsonify({"error": "Nessuna parola trovata dopo %s iterazioni" % max_iterations}), 404
+        best = None
 
     for word in candidate_words:
 
