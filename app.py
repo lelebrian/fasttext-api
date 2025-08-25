@@ -132,7 +132,7 @@ def hint():
             if strategy == "converge":
                 top_w1 = model.most_similar(w1, topn=record_best * iteration * iteration)
             else:
-                top_w1 = model.most_similar(w1, topn=limit * iteration * iteration)
+                top_w1 = model.most_similar(w1, topn=limit * iteration)
         except KeyError:
             return jsonify({"error": "Errore nel calcolo delle similarità"}), 500
 
