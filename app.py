@@ -6,9 +6,13 @@ import os
 import numpy as np
 import Levenshtein
 import json
+import logging
 
 app = Flask(__name__)
 CORS(app)
+
+# configure once at app startup (if not already)
+logging.basicConfig(level=logging.INFO)
 
 print("🚀 AVVIO CORRETTO DEL CODICE MODIFICATO")
 
@@ -249,6 +253,8 @@ def hint_test():
 
     track = []
 
+    logging.info("Going through the candidate_words: %s", len(candidate_words))   # 👈 this will log to console/file
+
     for word in candidate_words:
 
         score1 = rank_w1[word][1]
@@ -283,6 +289,9 @@ def hint_test():
             }
         
         track.append(track_word)
+
+        ### Logs to console
+        logging.info("Track word: %s", json.dumps(track_word, ensure_ascii=False))
 
         if is_better:
             best = {
