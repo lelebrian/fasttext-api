@@ -97,7 +97,7 @@ def hint():
     w1 = request.args.get("word1")
     w2 = request.args.get("word2")
     tentative = int(request.args.get("tentative", 0))
-    weight2base100 = int(request.args.get("weight2base100", 1))
+    weight2base100 = int(request.args.get("weight", 100))
     lev_threshold = 2
     lev_threshold_similarity = 0.7
 
