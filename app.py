@@ -216,6 +216,13 @@ def hint():
 
     if not candidate_words:
         return jsonify({"error": "Nessuna parola trovata"}), 404
+    
+    # Sort candidate words by rank_w1
+    candidate_words = sorted(
+        candidate_words,
+        key=lambda w: rank_w1.get(w, (10000, None))[0]  # default rank=10000 if missing
+    )
+    logging.info("Candidate words ordered by rank_w1: %s", candidate_words[:20])  # show first 20
         
     best = None
 
