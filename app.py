@@ -121,7 +121,7 @@ def hint():
     if w1 not in model or w2 not in model:
         return jsonify({"error": "Una delle parole non è nel vocabolario"}), 404
 
-    max_iterations = 5   # you can tweak this
+    max_iterations = 10   # you can tweak this
     iteration = 1
     candidate_words = set()
     top_w2 = model.most_similar(w2, topn=limit)
