@@ -192,6 +192,9 @@ def hint():
         #all good  # ✅ trovato almeno un candidato, uscita
     else:
         logging.info("Iteration %s: no candidates found, expanding search to just w1")
+
+        top_w1 = model.most_similar(w1, topn=limit2)
+        rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
         
         # Candidati: presenti in entrambe le liste e non blacklistati
         candidate_words = set(rank_w1.keys())
