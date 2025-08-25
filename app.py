@@ -236,9 +236,17 @@ def hint_test():
     rank_w1 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w1)}
     rank_w2 = {word: (i + 1, float(score)) for i, (word, score) in enumerate(top_w2)}
 
+    logging.info("Number of words in rank_w1: %s", len(rank_w1))   # 👈 this will log to console/file
+    logging.info("Number of words in rank_w2: %s", len(rank_w2))   # 👈 this will log to console/file
+
     # Prende come parole candidate solo quelle che sono sia in top_w1 e in top_w2
     candidate_words = set(rank_w1.keys()).intersection(rank_w2.keys())
+
+    logging.info("Candidate words after first intersection: %s", len(candidate_words))
+
     candidate_words = {w for w in candidate_words if w.lower() not in blacklist}
+
+    logging.info("Candidate words after blacklist: %s", len(candidate_words))
 
     # Prende solo le parole con Lev distance > soglia
     candidate_words = {
@@ -248,6 +256,8 @@ def hint_test():
         Levenshtein.distance(w.lower(), w2.lower()) > lev_threshold and
         all(Levenshtein.distance(w.lower(), b) > lev_threshold for b in blacklist)
     }
+
+    logging.info("Candidate words after lev distance: %s", len(candidate_words))
 
     best = None
 
