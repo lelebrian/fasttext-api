@@ -97,7 +97,7 @@ def hint():
     w1 = request.args.get("word1")
     w2 = request.args.get("word2")
     tentative = int(request.args.get("tentative", 0))
-    weight2 = int(request.args.get("weight", 1))
+    weight2base100 = int(request.args.get("weight2base100", 1))
     lev_threshold = 2
     lev_threshold_similarity = 0.7
 
@@ -118,6 +118,10 @@ def hint():
     # Argomento: blacklist
     blacklist_param = request.args.get("blacklist", "")
     blacklist = set(word.strip().lower() for word in blacklist_param.split(",") if word.strip())
+
+
+    logging.info("Called hint with weight base 100 = %s", weight2base100)
+
 
     # Check parole non nulle e in vocabolario
     if not w1 or not w2:
@@ -247,7 +251,7 @@ def hint():
             rank2 = limit2  # new to avoid loops or going too far
 
         if strategy == "converge":
-            score = weight2*rank2 + (1-weight2)*rank1
+            score = (weight2base100*rank2 + (100-weight2base100)*rank1) / 100.0
             is_better = best is None or score < best["score"]
         elif strategy == "rank_sum":
             score = rank1 + rank2
