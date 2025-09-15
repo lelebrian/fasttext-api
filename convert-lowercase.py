@@ -1,9 +1,9 @@
 from gensim.models import KeyedVectors
 
 # === CONFIGURATION ===
-vec_file = "C:\\Users\\emanu\\Desktop\\it_vec\\cc.it.300.vec"
-output_file = "it/fasttext_100k.kv"
-max_words = 100000
+vec_file = "C:\\Users\\emanu\\Desktop\\es_vec\\cc.es.300.vec"
+output_file = "es/fasttext_100k.kv"
+max_words = 70000
 
 # === LOAD MODEL ===
 print("🔄 Loading .vec file...")

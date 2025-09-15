@@ -62,10 +62,10 @@ def load_with_progress(filename, max_words):
         return model
 
 # Loading kv
-model = KeyedVectors.load("it/fasttext_100k.kv", mmap='r')  # local
+model = KeyedVectors.load("dict/fasttext_100k.kv", mmap='r')  # local
 
 # Loading vec
-num_words = 100000
+num_words = 70000
 #model = load_with_progress("it\cc.it.300.vec", num_words) # NUMERO PAROLE
 
 print_ram_usage()
