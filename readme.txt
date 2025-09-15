@@ -12,4 +12,5 @@ To deploy App
 
 Check app.py and that everything is fine in the folder
 Check the folder is linked to the GitHub reporitory
+Commit to github
 Open render.com and deploy
